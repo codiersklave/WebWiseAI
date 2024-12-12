@@ -1,0 +1,48 @@
+version: '3.9'
+
+services:
+  flask_app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/app:/app
+    environment:
+      FLASK_ENV: development
+    command: gunicorn --bind 0.0.0.0:5000 --reload wsgi:app
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672" # Default RabbitMQ port
+      - "15672:15672" # RabbitMQ Management GUI port
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "8080:80" # Nginx default HTTP port
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+
+  socketio:
+    build:
+      context: ./socketio
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - rabbitmq
+    environment:
+      RABBITMQ_USER: admin
+      RABBITMQ_PASS: admin
+      RABBITMQ_HOST: rabbitmq
