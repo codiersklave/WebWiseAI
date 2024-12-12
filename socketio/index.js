@@ -29,7 +29,7 @@ io.on('connection', (socket) => {
 });
 
 async function connectToRabbitMQ() {
-    const maxRetries = 5;
+    const maxRetries = 15;
     let attempt = 0;
 
     while (attempt < maxRetries) {
@@ -71,7 +71,7 @@ async function connectToRabbitMQ() {
         } catch (err) {
             console.error(`RabbitMQ connection failed (attempt ${attempt + 1}): ${err.message}`);
             attempt++;
-            await new Promise((res) => setTimeout(res, 5000)); // Wait 5 seconds before retrying
+            await new Promise((res) => setTimeout(res, 3000)); // Wait 5 seconds before retrying
         }
     }
 
