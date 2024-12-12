@@ -79,6 +79,6 @@ async function connectToRabbitMQ() {
 }
 
 server.listen(PORT, () => {
-    console.log(`Socket.IO server is running on http://localhost:${PORT}`);
+    console.log(`Socket.IO server is now running on http://localhost:${PORT}`);
     connectToRabbitMQ().catch(console.error);
 });
