@@ -10,6 +10,8 @@ CORS(app)  # Enable CORS for all routes
 @app.route('/health', methods=['POST'])
 def health_check():
     payload = request.get_json()
+    task_id = str(uuid.uuid4())
+    payload['task_id'] = task_id
     try:
         # Connect to RabbitMQ
         credentials = pika.PlainCredentials('admin', 'admin')
@@ -27,7 +29,7 @@ def health_check():
         # Close the connection
         connection.close()
 
-        return jsonify({"task_id": str(uuid.uuid4()), "message": "Task sent to RabbitMQ"}), 200
+        return jsonify({"task_id": task_id, "message": "Task sent to RabbitMQ"}), 200
     except Exception as e:
         return jsonify({"status": "unhealthy", "error": str(e)}), 500
 

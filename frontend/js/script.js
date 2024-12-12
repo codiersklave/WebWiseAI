@@ -31,7 +31,7 @@ $(document).ready(() => {
             contentType: 'application/json',
             data: JSON.stringify(payload),
             success: (response) => {
-                $('#messages').append(`Response from server: ${JSON.stringify(response)}</br>`);
+                $('#messages').append(`Response from server:<br> <pre>${JSON.stringify(response)}</pre>`);
             },
             error: (xhr, status, error) => {
                 errorMessage.text(`Error: ${xhr.responseText || status}`);

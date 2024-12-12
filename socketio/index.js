@@ -52,9 +52,9 @@ async function connectToRabbitMQ() {
                         console.log(`Received message: ${msg.content.toString()}`);
 
                         // Forward message to the specific client
-                        const { clientid, url } = messageContent;
+                        const { clientid, url, task_id } = messageContent;
                         if (clients[clientid]) {
-                            const messageToSend = `This will be the output from the AI which will be streamed to the client,<br>similiar to how ChatGPT does it. So no waiting until the AI is done creating the full text. <br>Processed URL: ${url}`;
+                            const messageToSend = `This will be the output from the <span style="color:#ff0000;">AI</span> which will be streamed to the client,<br>similiar to how ChatGPT does it. So no waiting until the AI is done creating the full text. <br><br>Processed URL: <br><span style="color:#31f5d8;">${url}</span><br><br>Task ID:<br><span style="color:#fff200;">${task_id}</span>`;
                             setTimeout(() => {
                                 console.log(`Sending message to client: ${messageToSend}`);
                                 sendAsStream(clients[clientid], messageToSend);
