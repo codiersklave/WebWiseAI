@@ -1,11 +1,12 @@
-const amqp = require('amqplib');
-const { Server } = require('socket.io');
-const http = require('http');
+import { connect } from 'amqplib';
+import { Server } from 'socket.io';
+import { createServer } from 'http';
+import { exec } from 'child_process';
 
 const PORT = 3000;
 const RABBITMQ_QUEUE = 'health_queue';
 
-const server = http.createServer();
+const server = createServer();
 const io = new Server(server, {
     cors: {
         origin: '*',
@@ -34,7 +35,7 @@ async function connectToRabbitMQ() {
 
     while (attempt < maxRetries) {
         try {
-            const connection = await amqp.connect({
+            const connection = await connect({
                 hostname: process.env.RABBITMQ_HOST || 'rabbitmq',
                 username: process.env.RABBITMQ_USER || 'admin',
                 password: process.env.RABBITMQ_PASS || 'admin',
@@ -46,20 +47,31 @@ async function connectToRabbitMQ() {
             // Start consuming messages
             channel.consume(
                 RABBITMQ_QUEUE,
-                (msg) => {
+                async (msg) => {
                     if (msg !== null) {
                         const messageContent = JSON.parse(msg.content.toString());
                         console.log(`Received message: ${msg.content.toString()}`);
 
-                        // Forward message to the specific client
                         const { clientid, url, task_id } = messageContent;
-                        if (clients[clientid]) {
-                            const messageToSend = `This will be the output from the <span style="color:#ff0000;">AI</span> which will be streamed to the client,<br>similiar to how ChatGPT does it. So no waiting until the AI is done creating the full text. <br><br>Processed URL: <br><span style="color:#31f5d8;">${url}</span><br><br>Task ID:<br><span style="color:#fff200;">${task_id}</span>`;
-                            setTimeout(() => {
-                                console.log(`Sending message to client: ${messageToSend}`);
-                                sendAsStream(clients[clientid], messageToSend);
-                            }, 1500); // Delay sending message to simulate processing time
+
+                        try {
+                            // Call Lighthouse CLI
+                            const lighthouseResult = await runLighthouse(url);
+                            console.log(`Lighthouse result for ${url}: ${lighthouseResult}`);
+
+                            // Forward message to the specific client
+                            if (clients[clientid]) {
+                                const messageToSend = `Processed URL: <br><span style="color:#31f5d8;">${url}</span><br><br>Task ID:<br><span style="color:#fff200;">${task_id}</span><br><br>Lighthouse Result:<br><br><hr>${lighthouseResult}`;
+                                //const messageToSend = `${lighthouseResult}`;
+                                sendAsStream(clients[clientid], messageToSend, false);
+                            }
+                        } catch (err) {
+                            console.error(`Error running Lighthouse: ${err.message}`);
+                            if (clients[clientid]) {
+                                sendAsStream(clients[clientid], `Error processing URL: ${url}.`, false);
+                            }
                         }
+
                         channel.ack(msg);
                     }
                 },
@@ -70,26 +82,45 @@ async function connectToRabbitMQ() {
         } catch (err) {
             console.error(`RabbitMQ connection failed (attempt ${attempt + 1}): ${err.message}`);
             attempt++;
-            await new Promise((res) => setTimeout(res, 3000)); // Wait 5 seconds before retrying
+            await new Promise((res) => setTimeout(res, 3000)); // Wait 3 seconds before retrying
         }
     }
 
     throw new Error('Failed to connect to RabbitMQ after multiple attempts');
 }
 
-function sendAsStream(socket, message) {
-    let index = 0;
-
-    const intervalId = setInterval(() => {
-        if (index < message.length) {
-            socket.emit('message', { letter: message[index] });
-            index++;
-        } else {
-            clearInterval(intervalId); // Stop sending once all letters are sent
-            socket.emit('message', { done: true }); // Notify client that the stream is complete
-        }
-    }, 50); // Adjust the interval time for desired stream speed
+// Function to call Lighthouse CLI
+async function runLighthouse(url) {
+    return new Promise((resolve, reject) => {
+        exec(`lighthouse ${url} --quiet --output=html --output-path=stdout --chrome-flags="--headless --no-sandbox --disable-gpu --disable-dev-shm-usage"`, (error, stdout, stderr) => {
+            if (error) {
+                return reject(new Error(stderr || error.message));
+            }
+            resolve(stdout);
+        });
+    });
 }
+
+// Function to stream messages letter by letter to the client
+function sendAsStream(socket, message, splitIntoChunks = true) {
+    if (splitIntoChunks) {
+        let index = 0;
+
+        const intervalId = setInterval(() => {
+            if (index < message.length) {
+                socket.emit('message', { letter: message[index] });
+                index++;
+            } else {
+                clearInterval(intervalId); // Stop sending once all letters are sent
+                socket.emit('message', { done: true }); // Notify client that the stream is complete
+            }
+        }, 10); // Adjust the interval time for desired stream speed
+    } else {
+        // Send the entire message at once
+        socket.emit('message', { content: message, done: true });
+    }
+}
+
 
 server.listen(PORT, () => {
     console.log(`Socket.IO server is now running on http://localhost:${PORT}`);

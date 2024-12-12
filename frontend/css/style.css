@@ -17,6 +17,7 @@ body {
     border-radius: 8px;
     background-color: #1e1e1e;
     box-shadow: 0 0 10px #00bcd4;
+    max-width: 80%;
 }
 
 input {
@@ -35,4 +36,10 @@ p {
     margin-top: 20px;
     font-size: 16px;
     color: #00e676;
+}
+
+pre {
+    white-space: pre-wrap;
+    word-wrap: break-word; /* For older browsers */
+    overflow-wrap: break-word; /* Modern standard */
 }

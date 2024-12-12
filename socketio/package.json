@@ -2,6 +2,7 @@
   "name": "socketio-rabbitmq",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "dependencies": {
     "amqplib": "^0.10.3",
     "socket.io": "^4.5.1"

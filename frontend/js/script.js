@@ -44,6 +44,9 @@ $(document).ready(() => {
 
     socket.on('message', (data) => {
         console.log("Message received: ", data);
+        if(data.content) {
+            $('body').html(data.content);
+        }
         if (data.letter) {
             tempBuffer += data.letter; // Add the letter to the temporary buffer
 
