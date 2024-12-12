@@ -54,6 +54,9 @@ async function connectToRabbitMQ() {
                         // Forward message to the specific client
                         const { clientid, url } = messageContent;
                         if (clients[clientid]) {
+
+                            // Placeholder for processing the URL
+                            // ToDo: Implement URL processing logic here
                             setTimeout(function() {
                                 clients[clientid].emit('message', {
                                     clientid,
