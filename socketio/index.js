@@ -54,15 +54,11 @@ async function connectToRabbitMQ() {
                         // Forward message to the specific client
                         const { clientid, url } = messageContent;
                         if (clients[clientid]) {
-
-                            // Placeholder for processing the URL
-                            // ToDo: Implement URL processing logic here
-                            setTimeout(function() {
-                                clients[clientid].emit('message', {
-                                    clientid,
-                                    message: `Processed URL: ${url}`,
-                                });
-                            }, 3000)
+                            const messageToSend = `This will be the output from the AI which will be streamed to the client,<br>similiar to how ChatGPT does it. So no waiting until the AI is done creating the full text. <br>Processed URL: ${url}`;
+                            setTimeout(() => {
+                                console.log(`Sending message to client: ${messageToSend}`);
+                                sendAsStream(clients[clientid], messageToSend);
+                            }, 1500); // Delay sending message to simulate processing time
                         }
                         channel.ack(msg);
                     }
@@ -79,6 +75,20 @@ async function connectToRabbitMQ() {
     }
 
     throw new Error('Failed to connect to RabbitMQ after multiple attempts');
+}
+
+function sendAsStream(socket, message) {
+    let index = 0;
+
+    const intervalId = setInterval(() => {
+        if (index < message.length) {
+            socket.emit('message', { letter: message[index] });
+            index++;
+        } else {
+            clearInterval(intervalId); // Stop sending once all letters are sent
+            socket.emit('message', { done: true }); // Notify client that the stream is complete
+        }
+    }, 50); // Adjust the interval time for desired stream speed
 }
 
 server.listen(PORT, () => {

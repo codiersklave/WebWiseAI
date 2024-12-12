@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import pika
 import json
+import uuid
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -26,7 +27,7 @@ def health_check():
         # Close the connection
         connection.close()
 
-        return jsonify({"status": "healthy", "message": "Message sent to RabbitMQ"}), 200
+        return jsonify({"task_id": str(uuid.uuid4()), "message": "Task sent to RabbitMQ"}), 200
     except Exception as e:
         return jsonify({"status": "unhealthy", "error": str(e)}), 500
 

@@ -31,7 +31,7 @@ $(document).ready(() => {
             contentType: 'application/json',
             data: JSON.stringify(payload),
             success: (response) => {
-                $('#messages').append(`Response from server: ${JSON.stringify(response)}`);
+                $('#messages').append(`Response from server: ${JSON.stringify(response)}</br>`);
             },
             error: (xhr, status, error) => {
                 errorMessage.text(`Error: ${xhr.responseText || status}`);
@@ -39,8 +39,35 @@ $(document).ready(() => {
         });
     });
 
-    // Listen for messages from the server
+    let currentStream = ''; // Buffer to hold the streamed content
+    let tempBuffer = '';    // Temporary buffer for incomplete tags
+
     socket.on('message', (data) => {
-        $('#messages').append(`<p>Message for ${data.clientid}: ${data.message}</p>`);
+        console.log("Message received: ", data);
+        if (data.letter) {
+            tempBuffer += data.letter; // Add the letter to the temporary buffer
+
+            // Check if a complete tag exists in the temporary buffer
+            const tagPattern = /<[^>]*>/; // Matches complete tags like <br>, <p>, etc.
+            if (tagPattern.test(tempBuffer)) {
+                // Extract the complete tag and add it to the main stream
+                currentStream += tempBuffer;
+                tempBuffer = ''; // Clear the temporary buffer
+            } else {
+                // Check if the tempBuffer is NOT inside a tag
+                if (!tempBuffer.startsWith('<')) {
+                    currentStream += tempBuffer;
+                    tempBuffer = ''; // Clear the buffer as there's no tag
+                }
+            }
+
+            // Update the DOM with the completed content
+            $('#chat').html(currentStream);
+        } else {
+            // Clear the buffer and show the completion message
+            currentStream = "";
+            tempBuffer = "";
+        }
     });
+
 });
