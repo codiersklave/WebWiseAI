@@ -3,6 +3,12 @@ $(document).ready(() => {
     const socket = io('http://localhost:3000', { query: { clientId } }); // Connect to Socket.IO with clientId
 
     $('#submitBtn').click(() => {
+        $('#chat').html("Waiting for AI suggestions...");
+        $('#iframe').html("Loading Lighthouse results...");
+
+        // Fnon.Box.Ripple("#chat", "Waiting for AI suggestions...");
+        // Fnon.Box.Ripple("#iframe", "Loading Lighthouse results...");
+
         const url = $('#urlInput').val();
         const errorMessage = $('#error');
         const messages = $('#messages');
@@ -45,7 +51,9 @@ $(document).ready(() => {
     socket.on('message', (data) => {
         console.log("Message received: ", data);
         if(data.content) {
-            $('body').html(data.content);
+            //$('body').html(data.content);
+            $('#iframe').html("");
+            embedHtmlInIframe('#iframe', data.content);
         }
         if (data.letter) {
             tempBuffer += data.letter; // Add the letter to the temporary buffer
@@ -74,3 +82,33 @@ $(document).ready(() => {
     });
 
 });
+
+function embedHtmlInIframe(querySelector, htmlContent) {
+    // Get the target element using the querySelector
+    const targetNode = document.querySelector(querySelector);
+
+    if (!targetNode) {
+        console.error(`No element found for selector: "${querySelector}"`);
+        return;
+    }
+
+    // Create an iframe
+    const iframe = document.createElement("iframe");
+    iframe.style.width = "100%";
+    iframe.style.border = "none";
+
+    // Append iframe to the target node
+    targetNode.appendChild(iframe);
+
+    // Write the HTML content into the iframe
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    iframeDoc.open();
+    iframeDoc.write(htmlContent);
+    iframeDoc.close();
+
+    // Adjust the height of the iframe to fit the content
+    iframe.onload = () => {
+        const iframeBody = iframeDoc.body;
+        iframe.style.height = (iframeBody.scrollHeight + 400) + "px";
+    };
+}

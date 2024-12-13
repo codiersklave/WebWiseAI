@@ -61,9 +61,11 @@ async function connectToRabbitMQ() {
 
                             // Forward message to the specific client
                             if (clients[clientid]) {
-                                const messageToSend = `Processed URL: <br><span style="color:#31f5d8;">${url}</span><br><br>Task ID:<br><span style="color:#fff200;">${task_id}</span><br><br>Lighthouse Result:<br><br><hr>${lighthouseResult}`;
-                                //const messageToSend = `${lighthouseResult}`;
-                                sendAsStream(clients[clientid], messageToSend, false);
+                                const messageToSend2 = `${lighthouseResult}`;
+                                sendAsStream(clients[clientid], messageToSend2, false);
+
+                                const messageToSend1 = `Processed URL: <br><span style="color:#31f5d8;">${url}</span><br><br>Task ID:<br><span style="color:#fff200;">${task_id}</span>`;
+                                setTimeout(() => sendAsStream(clients[clientid], messageToSend1, true), 3000);
                             }
                         } catch (err) {
                             console.error(`Error running Lighthouse: ${err.message}`);
@@ -92,7 +94,7 @@ async function connectToRabbitMQ() {
 // Function to call Lighthouse CLI
 async function runLighthouse(url) {
     return new Promise((resolve, reject) => {
-        exec(`lighthouse ${url} --quiet --output=html --output-path=stdout --chrome-flags="--headless --no-sandbox --disable-gpu --disable-dev-shm-usage"`, (error, stdout, stderr) => {
+        exec(`lighthouse ${url} --quiet --output=html --output-path=stdout --chrome-flags="--headless --no-sandbox --disable-gpu --disable-dev-shm-usage"`,{ maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
             if (error) {
                 return reject(new Error(stderr || error.message));
             }
